@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { EventList } from "@/components/events/EventList";
+import { Directions } from "@/components/places/Directions";
 import { Hours } from "@/components/places/Hours";
 import { PlaceStatus } from "@/components/places/PlaceStatus";
 import { RoomList } from "@/components/places/RoomList";
@@ -10,6 +12,7 @@ import { Notices } from "@/components/ui/Notices";
 import { PanelHeader, Section } from "@/components/ui/basics";
 import { copy } from "@/lib/copy";
 import {
+  eventsAt,
   getPlace,
   noticesFor,
   places,
@@ -74,6 +77,23 @@ async function PlaceContent({
         <Notices notices={noticesFor(place.id)} />
       </div>
 
+      <Section title={copy.place.gettingThere}>
+        <p className="text-[15px] leading-6">{place.gettingThere}</p>
+        {geo.offscene ? (
+          <a
+            href={mapsUrl(place.id)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-flex items-center gap-2 text-[14px] font-semibold text-brand-deep hover:underline"
+          >
+            <Navigation aria-hidden size={16} />
+            {copy.common.openInMaps}
+          </a>
+        ) : (
+          <Directions placeId={place.id} />
+        )}
+      </Section>
+
       {rooms.length > 0 ? (
         <Section title={copy.place.rooms}>
           <Suspense>
@@ -98,6 +118,12 @@ async function PlaceContent({
         </Section>
       ) : null}
 
+      {eventsAt(place.id).length > 0 ? (
+        <Suspense>
+          <EventList placeId={place.id} />
+        </Suspense>
+      ) : null}
+
       <Section title={copy.place.about}>
         <p className="text-[15px] leading-6 text-pretty">{place.summary}</p>
         {place.address ? (
@@ -105,24 +131,11 @@ async function PlaceContent({
         ) : null}
       </Section>
 
-      {place.hours ? (
+      {Array.isArray(place.hours) ? (
         <Section>
           <Hours hours={place.hours} />
         </Section>
       ) : null}
-
-      <Section title={copy.place.gettingThere}>
-        <p className="text-[15px] leading-6">{place.gettingThere}</p>
-        <a
-          href={mapsUrl(place.id)}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-flex items-center gap-2 text-[14px] font-semibold text-brand-deep hover:underline"
-        >
-          <Navigation aria-hidden size={16} />
-          {copy.common.openInMaps}
-        </a>
-      </Section>
 
       {previous && next && studyPlaces.length > 1 ? (
         <nav className="flex justify-between gap-2 border-t border-line px-3 py-3">

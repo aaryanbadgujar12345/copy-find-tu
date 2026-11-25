@@ -88,7 +88,11 @@ export function CampusModel({
         object.material = material;
         object.userData.placeId = placeId;
       } else {
-        object.material = buildingMaterial(SCENE_COLORS.context);
+        const onCampus = name.startsWith("context-campus");
+        object.material = buildingMaterial(
+          onCampus ? SCENE_COLORS.campusBuilding : SCENE_COLORS.context,
+        );
+        object.userData.onCampus = onCampus;
       }
       object.castShadow = true;
       object.receiveShadow = true;

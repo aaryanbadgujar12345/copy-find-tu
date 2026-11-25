@@ -2,12 +2,15 @@ import type { Span, WeekHours } from "@/data/types";
 import type { CampusTime } from "./campus-time";
 import { formatTime } from "./campus-time";
 
-export function spanOn(hours: WeekHours | null, weekday: number): Span | null {
+type PlaceHours = WeekHours | null | "unlisted";
+
+export function spanOn(hours: PlaceHours, weekday: number): Span | null {
+  if (hours === "unlisted") return null;
   if (hours === null) return { open: 0, close: 1440 };
   return hours[weekday] ?? null;
 }
 
-export function isOpenAt(hours: WeekHours | null, time: CampusTime): boolean {
+export function isOpenAt(hours: PlaceHours, time: CampusTime): boolean {
   const span = spanOn(hours, time.weekday);
   return !!span && time.minutes >= span.open && time.minutes < span.close;
 }
@@ -23,14 +26,14 @@ export interface OpenState {
   label: string;
 }
 
-export function openState(
-  hours: WeekHours | null,
-  time: CampusTime,
-): OpenState {
+export function openState(hours: PlaceHours, time: CampusTime): OpenState {
+  if (hours === "unlisted")
+    return { open: false, label: "Opening hours not listed" };
   if (hours === null) return { open: true, label: "Always open" };
   const today = spanOn(hours, time.weekday);
   if (today && time.minutes >= today.open && time.minutes < today.close) {
-    return { open: true, label: `Open until ${formatTime(today.close)}` };
+    const until = today.close >= 1440 ? "midnight" : formatTime(today.close);
+    return { open: true, label: `Open until ${until}` };
   }
   if (today && time.minutes < today.open) {
     return { open: false, label: `Opens at ${formatTime(today.open)}` };

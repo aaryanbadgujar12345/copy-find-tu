@@ -2,11 +2,18 @@
 
 import { ArrowUpRight, CalendarOff, MapPin } from "lucide-react";
 import Link from "next/link";
-import { EmptyState, Skeleton } from "@/components/ui/basics";
+import { useSearchParams } from "next/navigation";
+import {
+  ChipLink,
+  EmptyState,
+  Section,
+  Skeleton,
+} from "@/components/ui/basics";
 import { PlaceIcon } from "@/components/ui/PlaceIcon";
-import type { CampusEvent } from "@/data/types";
+import type { CampusEvent, PlaceId } from "@/data/types";
 import {
   addDays,
+  type CampusTime,
   formatDay,
   formatTime,
   useCampusTime,
@@ -21,8 +28,49 @@ const TONES: Record<CampusEvent["tone"], string> = {
   violet: "from-[#ece7fb] to-[#d7cdf5] text-[#4f3a99]",
 };
 
-export function EventList() {
+export const EVENT_FILTERS = ["today", "week", "later"] as const;
+export type EventFilter = (typeof EVENT_FILTERS)[number];
+
+export function isEventFilter(value: string | null): value is EventFilter {
+  return EVENT_FILTERS.includes(value as EventFilter);
+}
+
+/** Events that haven't ended yet, soonest first, optionally for one day range. */
+export function upcomingEvents(
+  time: CampusTime,
+  filter: EventFilter | null,
+  placeId?: PlaceId,
+): CampusEvent[] {
+  const weekEnd = addDays(time.date, 7);
+  return events
+    .filter((event) => !placeId || event.placeId === placeId)
+    .filter(
+      (event) =>
+        event.date > time.date ||
+        (event.date === time.date && event.end > time.minutes),
+    )
+    .filter((event) => {
+      if (filter === "today") return event.date === time.date;
+      if (filter === "week") return event.date < weekEnd;
+      if (filter === "later") return event.date >= weekEnd;
+      return true;
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || a.start - b.start);
+}
+
+const FILTER_LABELS: Record<EventFilter | "all", string> = {
+  all: copy.events.all,
+  today: copy.events.today,
+  week: copy.events.week,
+  later: copy.events.laterFilter,
+};
+
+export function EventList({ placeId }: { placeId?: PlaceId }) {
   const time = useCampusTime();
+  const params = useSearchParams();
+  const raw = params.get("when");
+  const filter = !placeId && isEventFilter(raw) ? raw : null;
+
   if (!time) {
     return (
       <div className="grid gap-4">
@@ -31,100 +79,146 @@ export function EventList() {
       </div>
     );
   }
-  const upcoming = events
-    .map((event) => ({ ...event, date: addDays(time.date, event.dayOffset) }))
-    .filter((event) => event.dayOffset > 0 || event.end > time.minutes)
-    .sort((a, b) => a.dayOffset - b.dayOffset || a.start - b.start);
-
-  if (upcoming.length === 0) {
+  const list = upcomingEvents(time, filter, placeId);
+  if (placeId) {
+    if (list.length === 0) return null;
     return (
-      <EmptyState
-        icon={<CalendarOff size={22} />}
-        title={copy.events.empty}
-        body={copy.events.emptyHint}
-      />
+      <Section title={copy.events.here}>
+        <ul role="list" className="grid gap-4">
+          {list.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              time={time}
+              showPlace={false}
+              Heading="h3"
+            />
+          ))}
+        </ul>
+      </Section>
     );
   }
 
-  const groups = [
-    {
-      title: copy.events.thisWeek,
-      items: upcoming.filter((event) => event.dayOffset < 7),
-    },
-    {
-      title: copy.events.later,
-      items: upcoming.filter((event) => event.dayOffset >= 7),
-    },
-  ].filter((group) => group.items.length > 0);
-
   return (
-    <div className="grid gap-6">
-      {groups.map((group) => (
-        <section key={group.title} aria-labelledby={`events-${group.title}`}>
-          <h2
-            id={`events-${group.title}`}
-            className="mb-3 text-[13px] font-semibold tracking-wide text-ink-2 uppercase"
+    <div className="grid gap-4">
+      {placeId ? null : (
+        <>
+          <nav
+            aria-label={copy.events.filters}
+            className="-mx-5 scrollbar-none flex gap-2 overflow-x-auto px-5"
           >
-            {group.title}
-          </h2>
-          <ul role="list" className="grid gap-4">
-            {group.items.map((event) => {
-              const place = getPlace(event.placeId);
-              return (
-                <li
-                  key={event.id}
-                  className="overflow-hidden rounded-(--radius-card) border border-line"
-                >
-                  <div
-                    className={`flex h-28 items-end justify-between bg-linear-to-br p-4 ${TONES[event.tone]}`}
-                  >
-                    <p className="text-[13px] font-semibold">
-                      {formatDay(event.date, time.date)} ·{" "}
-                      {formatTime(event.start)} – {formatTime(event.end)}
-                    </p>
-                    <span aria-hidden className="opacity-70">
-                      <PlaceIcon id={event.placeId} size={40} />
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-[17px] font-semibold tracking-tight">
-                      {event.title}
-                    </h3>
-                    <p className="mt-1 text-[14px] leading-5 text-ink-2">
-                      {event.summary}
-                    </p>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                      {place ? (
-                        <Link
-                          href={`/places/${place.id}`}
-                          className="inline-flex items-center gap-1.5 text-[14px] font-medium text-ink hover:underline"
-                        >
-                          <MapPin
-                            aria-hidden
-                            size={16}
-                            className="text-ink-2"
-                          />
-                          {place.shortName}
-                        </Link>
-                      ) : null}
-                      <a
-                        href={event.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-[14px] font-semibold text-brand-deep hover:underline"
-                      >
-                        {copy.events.moreInfo}
-                        <span className="sr-only">: {event.title}</span>
-                        <ArrowUpRight aria-hidden size={16} />
-                      </a>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+            {(["all", ...EVENT_FILTERS] as const).map((id) => (
+              <ChipLink
+                key={id}
+                href={id === "all" ? "/events" : `/events?when=${id}`}
+                replace
+                scroll={false}
+                active={(filter ?? "all") === id}
+              >
+                {FILTER_LABELS[id]}
+              </ChipLink>
+            ))}
+          </nav>
+          <p className="text-[13px] leading-5 text-ink-2">{copy.events.demo}</p>
+        </>
+      )}
+
+      {list.length === 0 ? (
+        <EmptyState
+          icon={<CalendarOff size={22} />}
+          title={filter ? copy.events.emptyFilter : copy.events.empty}
+          body={filter ? copy.events.emptyFilterHint : copy.events.emptyHint}
+        />
+      ) : (
+        <ul role="list" className="grid gap-4">
+          {list.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              time={time}
+              showPlace
+              Heading="h2"
+            />
+          ))}
+        </ul>
+      )}
     </div>
+  );
+}
+
+function EventCard({
+  event,
+  time,
+  showPlace,
+  Heading,
+}: {
+  event: CampusEvent;
+  time: CampusTime;
+  showPlace: boolean;
+  Heading: "h2" | "h3";
+}) {
+  const place = getPlace(event.placeId);
+  const now =
+    event.date === time.date &&
+    event.start <= time.minutes &&
+    event.end > time.minutes;
+  return (
+    <li className="overflow-hidden rounded-(--radius-card) border border-line">
+      <article aria-labelledby={`event-${event.id}`}>
+        <div
+          className={`flex h-24 items-end justify-between bg-linear-to-br p-4 ${TONES[event.tone]}`}
+        >
+          <p className="text-[13px] font-semibold">
+            {now ? (
+              <span className="mr-2 rounded-full bg-white/80 px-2 py-0.5 text-[12px]">
+                {copy.events.happeningNow}
+              </span>
+            ) : null}
+            <time dateTime={`${event.date}T${formatTime(event.start)}`}>
+              {formatDay(event.date, time.date)} · {formatTime(event.start)} –{" "}
+              {formatTime(event.end)}
+            </time>
+          </p>
+          <span aria-hidden className="opacity-70">
+            <PlaceIcon id={event.placeId} size={36} />
+          </span>
+        </div>
+        <div className="p-4">
+          <Heading
+            id={`event-${event.id}`}
+            className="text-[17px] font-semibold tracking-tight"
+          >
+            {event.title}
+          </Heading>
+          <p className="mt-1 text-[14px] leading-5 text-ink-2">
+            {event.summary}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            {showPlace && place ? (
+              <Link
+                href={`/places/${place.id}`}
+                className="inline-flex min-h-11 items-center gap-1.5 text-[14px] font-medium text-ink hover:underline"
+              >
+                <MapPin aria-hidden size={16} className="text-ink-2" />
+                {place.shortName}
+                <span className="sr-only">: {copy.common.showOnMap}</span>
+              </Link>
+            ) : null}
+            {event.link ? (
+              <a
+                href={event.link}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-11 items-center gap-1 text-[14px] font-semibold text-brand-deep hover:underline"
+              >
+                {copy.events.moreInfo}
+                <span className="sr-only">: {event.title}</span>
+                <ArrowUpRight aria-hidden size={16} />
+              </a>
+            ) : null}
+          </div>
+        </div>
+      </article>
+    </li>
   );
 }

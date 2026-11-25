@@ -85,6 +85,20 @@ export const places: Place[] = [
     gettingThere: "Tram 19 to Aula, the high-rise is across Mekelweg.",
   },
   {
+    id: "flux",
+    name: "Flux",
+    shortName: "Flux",
+    categories: [],
+    searchTerms: ["flux", "lecture", "teaching", "building 39", "drebbelweg"],
+    isFaculty: false,
+    summary:
+      "Temporary teaching building behind the EEMCS high-rise, with four large lecture halls for 158 to 192 people.",
+    address: "Cornelis Drebbelweg",
+    hours: "unlisted",
+    gettingThere:
+      "Tram 19 to Aula, then walk past the EEMCS high-rise to Cornelis Drebbelweg.",
+  },
+  {
     id: "bk-city",
     name: "Faculty of Architecture (BK City)",
     shortName: "BK City",

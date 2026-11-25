@@ -152,3 +152,45 @@ export function AreaHighlight({ focus }: { focus: MapFocus }) {
     </>
   );
 }
+
+/** The TU Delft campus: a tinted ground and its outline, so you can see where it starts and ends. */
+export function CampusArea() {
+  const ring = campusGeo.campus;
+  const shape = useMemo(() => {
+    if (!ring || ring.length < 3) return null;
+    return new THREE.Shape(ring.map(([x, z]) => new THREE.Vector2(x, -z)));
+  }, [ring]);
+  const outline = useMemo(
+    () => (ring ? [...ring, ring[0]].map((point) => toVector(point, 0.7)) : []),
+    [ring],
+  );
+  if (!shape) return null;
+  return (
+    <>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.02, 0]}
+        receiveShadow
+        renderOrder={0}
+      >
+        <shapeGeometry args={[shape]} />
+        <meshStandardMaterial
+          color={SCENE_COLORS.campusGround}
+          roughness={1}
+          polygonOffset
+          polygonOffsetFactor={-0.5}
+        />
+      </mesh>
+      <Line
+        points={outline}
+        color={SCENE_COLORS.campusOutline}
+        lineWidth={2.5}
+        dashed
+        dashSize={10}
+        gapSize={6}
+        transparent
+        opacity={0.85}
+      />
+    </>
+  );
+}

@@ -29,7 +29,17 @@ import {
   sceneFromLatLon,
   simplifyLine,
 } from "./campus/geo.mjs";
-import { MeshBuilder, addBuilding, parseFeature } from "./campus/buildings.mjs";
+import {
+  MeshBuilder,
+  addBuilding,
+  extrudeFootprint,
+  parseFeature,
+} from "./campus/buildings.mjs";
+import {
+  CAMPUS_OUTLINE,
+  FLUX_FOOTPRINT,
+  FLUX_HEIGHT,
+} from "./campus/campus-area.mjs";
 import { areaPolygons, buildGround, clipLine } from "./campus/ground.mjs";
 import {
   buildGraph,
@@ -156,6 +166,10 @@ async function main() {
         b.footprints.some((r) => pointInRing(p, r)),
       );
     }
+    if (!found.length && rule.fallback === "flux") {
+      console.log(`  ${id}: not in 3DBAG, extruding the OSM footprint`);
+      continue;
+    }
     if (!found.length) throw new Error(`No 3DBAG building for ${id}`);
     placeBuildings[id] = found;
     for (const b of found) taken.add(b.id);
@@ -170,19 +184,29 @@ async function main() {
     meshes.push({ name: `place-${id}`, mesh });
     placeTop[id] = topOf(mesh);
   }
+  if (!placeBuildings.flux) {
+    const mesh = new MeshBuilder();
+    const ring = FLUX_FOOTPRINT.map(([lat, lon]) => sceneFromLatLon(lat, lon));
+    extrudeFootprint(mesh, simplifyLine(ring, 0.5), FLUX_HEIGHT);
+    meshes.push({ name: "place-flux", mesh });
+    placeTop.flux = topOf(mesh);
+    placeBuildings.flux = [{ main: ring, footprints: [ring] }];
+  }
   const context = new MeshBuilder();
+  const contextCampus = new MeshBuilder();
   let detailed = 0;
   for (const b of buildings) {
     if (taken.has(b.id)) continue;
     const campus = onCampus(b.centroid);
     if (campus) detailed++;
     addBuilding(
-      context,
+      campus ? contextCampus : context,
       b,
       campus ? ["2.2", "1.3", "1.2"] : ["1.2", "1.3", "2.2"],
     );
   }
   meshes.push({ name: "context", mesh: context });
+  meshes.push({ name: "context-campus", mesh: contextCampus });
   console.log(
     `  context: ${detailed} campus buildings at LoD 2.2, the rest LoD 1.2`,
   );
@@ -476,6 +500,10 @@ async function main() {
   const geo = {
     origin: ORIGIN,
     bounds,
+    campus: simplifyLine(
+      CAMPUS_OUTLINE.map(([lat, lon]) => sceneFromLatLon(lat, lon)),
+      1,
+    ).map(pt),
     places: ordered,
     routes: Object.fromEntries(
       Object.entries(routes).filter(([, r]) => r.length > 1),
@@ -517,6 +545,7 @@ const SHORT = {
   pulse: "Pulse",
   echo: "Echo",
   eemcs: "EEMCS",
+  flux: "Flux",
   "bk-city": "BK City",
   x: "X",
   "science-centre": "Science Centre",
@@ -573,7 +602,7 @@ pnpm build:campus            # uses scripts/.cache when present
 rm -rf scripts/.cache && pnpm build:campus   # fresh download
 \`\`\`
 
-Node names in the GLB: \`place-<PlaceId>\` per POI building, \`context\` for every other building, \`ground-water\`, \`ground-green\`, \`ground-roads\`, \`ground-paths\`. Geometry is quantized, so each node carries a transform: keep the node's position and scale when reusing its geometry.
+Node names in the GLB: \`place-<PlaceId>\` per POI building, \`context-campus\` for other buildings inside the TU Delft campus outline, \`context\` for the city around it, \`ground-water\`, \`ground-green\`, \`ground-roads\`, \`ground-paths\`. Geometry is quantized, so each node carries a transform: keep the node's position and scale when reusing its geometry.
 `;
 }
 

@@ -1,5 +1,5 @@
 import earcut from "earcut";
-import { ORIGIN_RD } from "./geo.mjs";
+import { ORIGIN_RD, pointInRing } from "./geo.mjs";
 
 const [OX, OY] = ORIGIN_RD;
 
@@ -158,4 +158,37 @@ export function addBuilding(mesh, b, lods) {
     }
   }
   return true;
+}
+
+/**
+ * A plain block from a footprint, for a building 3DBAG doesn't have yet.
+ * `ring` is [x, z] scene points, `height` metres.
+ */
+export function extrudeFootprint(mesh, ring, height) {
+  const open =
+    ring.length > 1 &&
+    ring[0][0] === ring.at(-1)[0] &&
+    ring[0][1] === ring.at(-1)[1]
+      ? ring.slice(0, -1)
+      : ring;
+  mesh.addPolygon([open.map(([x, z]) => [x, height, z])], [0, 1, 0]);
+  for (let i = 0; i < open.length; i++) {
+    const a = open[i];
+    const b = open[(i + 1) % open.length];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (len < 0.05) continue;
+    const quad = [
+      [a[0], 0, a[1]],
+      [b[0], 0, b[1]],
+      [b[0], height, b[1]],
+      [a[0], height, a[1]],
+    ];
+    let n = [(b[1] - a[1]) / len, 0, -(b[0] - a[0]) / len];
+    const mid = [
+      (a[0] + b[0]) / 2 + n[0] * 0.2,
+      (a[1] + b[1]) / 2 + n[2] * 0.2,
+    ];
+    if (pointInRing(mid, open)) n = [-n[0], 0, -n[2]];
+    mesh.addPolygon([quad], n);
+  }
 }

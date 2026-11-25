@@ -12,6 +12,9 @@ export default function StudyPage() {
     <>
       <PanelHeader title={copy.study.title} />
       <p className="-mt-1 px-5 text-[14px] text-ink-2">{copy.study.intro}</p>
+      <p className="mt-1 px-5 text-[13px] leading-5 text-ink-2">
+        {copy.occupancy.estimateNote}
+      </p>
       <Section>
         <Link
           href="/study/recommend"

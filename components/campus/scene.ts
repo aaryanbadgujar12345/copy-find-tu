@@ -9,12 +9,16 @@ export const SCENE_COLORS = {
   green: "#d3e0c6",
   roads: "#fbfbf9",
   paths: "#f2f0e8",
-  context: "#dfe2e4",
-  place: "#fbfbfa",
-  dimmed: "#e3e5e7",
+  context: "#e4e6e4",
+  campusGround: "#e1ebec",
+  campusOutline: "#00759a",
+  campusBuilding: "#cfe6ef",
+  place: "#ffffff",
+  dimmed: "#dde9ee",
   selected: "#00a6d6",
   tree: "#b4cc9f",
   route: "#00759a",
+  you: "#1a73e8",
   tram: "#8ea2b5",
 };
 
@@ -49,4 +53,44 @@ export function prefersReducedMotion(): boolean {
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
+}
+
+/**
+ * Fades the whole scene into the background towards the edge of the model,
+ * so the map has no hard square border. Swaps three.js's fog chunks once:
+ * every material with `fog` gets it, lines and instanced meshes included.
+ */
+let fadeInstalled = false;
+export function installEdgeFade() {
+  if (fadeInstalled) return;
+  fadeInstalled = true;
+  const { min, max } = campusGeo.bounds;
+  const cx = ((min[0] + max[0]) / 2).toFixed(1);
+  const cz = ((min[1] + max[1]) / 2).toFixed(1);
+  const hx = ((max[0] - min[0]) / 2).toFixed(1);
+  const hz = ((max[1] - min[1]) / 2).toFixed(1);
+  const chunks = THREE.ShaderChunk as Record<string, string>;
+  chunks.fog_pars_vertex = `#ifdef USE_FOG
+  varying float vFogDepth;
+  varying vec2 vFogWorld;
+#endif`;
+  chunks.fog_vertex = `#ifdef USE_FOG
+  vFogDepth = - mvPosition.z;
+  vFogWorld = (inverse(viewMatrix) * mvPosition).xz;
+#endif`;
+  chunks.fog_pars_fragment = `#ifdef USE_FOG
+  uniform vec3 fogColor;
+  varying float vFogDepth;
+  varying vec2 vFogWorld;
+  uniform float fogNear;
+  uniform float fogFar;
+#endif`;
+  chunks.fog_fragment = `#ifdef USE_FOG
+  vec2 fogEdge = (vFogWorld - vec2(${cx}, ${cz})) / vec2(${hx}, ${hz});
+  float fogFactor = max(
+    smoothstep(0.62, 0.97, length(fogEdge)),
+    smoothstep(fogNear, fogFar, vFogDepth)
+  );
+  gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);
+#endif`;
 }

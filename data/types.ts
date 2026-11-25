@@ -4,6 +4,7 @@ export type PlaceId =
   | "pulse"
   | "echo"
   | "eemcs"
+  | "flux"
   | "bk-city"
   | "x"
   | "science-centre"
@@ -50,8 +51,8 @@ export interface Place {
   isFaculty: boolean;
   summary: string;
   address: string | null;
-  /** `null` means always open, like a park. */
-  hours: WeekHours | null;
+  /** `null` means always open, like a park. `"unlisted"`: no published hours yet. */
+  hours: WeekHours | null | "unlisted";
   gettingThere: string;
 }
 
@@ -88,12 +89,13 @@ export interface CampusEvent {
   id: string;
   title: string;
   placeId: PlaceId;
-  /** Days from today, so the mock never goes stale. */
-  dayOffset: number;
+  /** Calendar day, campus time. Past events drop off the list. */
+  date: string;
   start: Minutes;
   end: Minutes;
   summary: string;
-  link: string;
+  /** Event page, or `null` while there's no real one. */
+  link: string | null;
   tone: "cyan" | "green" | "orange" | "violet";
 }
 
@@ -136,6 +138,8 @@ export interface PlaceGeo {
 export interface CampusGeo {
   origin: { lat: number; lon: number };
   bounds: { min: ScenePoint; max: ScenePoint };
+  /** The TU Delft campus outline from OpenStreetMap. */
+  campus: ScenePoint[];
   places: Record<PlaceId, PlaceGeo>;
   /** Walking route from the nearest tram 19 stop to the place. Empty when there is none. */
   routes: Partial<Record<PlaceId, ScenePoint[]>>;

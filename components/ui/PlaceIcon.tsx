@@ -23,6 +23,7 @@ const ICONS: Record<PlaceId, LucideIcon> = {
   pulse: BookOpen,
   echo: Presentation,
   eemcs: GraduationCap,
+  flux: Presentation,
   "bk-city": GraduationCap,
   x: Dumbbell,
   "science-centre": FlaskConical,

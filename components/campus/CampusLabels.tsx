@@ -4,7 +4,9 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { ArrowUpRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as THREE from "three";
+import { levelWord } from "@/components/ui/Occupancy";
 import { PlaceIcon } from "@/components/ui/PlaceIcon";
+import { copy } from "@/lib/copy";
 import type { PlaceId, ScenePoint } from "@/data/types";
 import type { CampusTime } from "@/lib/campus-time";
 import { getPlace, places, roomsIn } from "@/lib/data/catalog";
@@ -107,7 +109,7 @@ export function LabelLayer({
               onClick={() => go(place.id)}
               title={marker.name}
               aria-label={`${place.name}: ${marker.name}`}
-              className={`${base} flex size-7 items-center justify-center rounded-full border-2 border-white shadow-md transition-colors ${
+              className={`${base} flex size-9 items-center justify-center rounded-full border-2 border-white shadow-md transition-colors ${
                 selected
                   ? "bg-navy text-white"
                   : lit
@@ -141,7 +143,7 @@ export function LabelLayer({
             type="button"
             onClick={() => go(place.id)}
             aria-current={selected ? "true" : undefined}
-            className={`${base} flex items-center gap-1.5 rounded-full py-1 pr-3 pl-1 text-[12px] font-semibold whitespace-nowrap shadow-md transition-[background-color,color,opacity] duration-300 ${
+            className={`${base} flex min-h-7 items-center gap-1.5 rounded-full py-1 pr-3 pl-1 text-[12px] font-semibold whitespace-nowrap shadow-md transition-[background-color,color,opacity] duration-300 ${
               selected
                 ? "z-10 bg-navy text-white"
                 : lit
@@ -156,11 +158,23 @@ export function LabelLayer({
             </span>
             {place.shortName}
             {occupancy?.state === "open" ? (
+              <span className="flex items-center gap-1 font-medium text-ink-2">
+                <span
+                  aria-hidden
+                  className="size-2 rounded-full"
+                  style={{ background: LEVEL_TINT[occupancy.level] }}
+                />
+                <span className={selected ? "text-white/85" : undefined}>
+                  {levelWord(occupancy)}
+                </span>
+                <span className="sr-only">({copy.occupancy.estimate})</span>
+              </span>
+            ) : occupancy?.state === "closed" ? (
               <span
-                aria-hidden
-                className="size-2 rounded-full"
-                style={{ background: LEVEL_TINT[occupancy.level] }}
-              />
+                className={`font-medium ${selected ? "text-white/85" : "text-ink-2"}`}
+              >
+                {copy.occupancy.closed}
+              </span>
             ) : null}
             {geo.offscene ? <ArrowUpRight aria-hidden size={12} /> : null}
           </button>

@@ -9,15 +9,19 @@ import { campusGeo } from "@/lib/geo";
 import { mapFocus } from "@/lib/map-focus";
 import { CameraRig } from "./CameraRig";
 import { LabelLayer, LabelProjector } from "./CampusLabels";
+import { NavigationLayer } from "./NavigationLayer";
 import { CampusModel } from "./CampusModel";
 import {
   AreaHighlight,
   BikeRacks,
+  CampusArea,
   TramLine,
   Trees,
   WalkingRoute,
 } from "./CampusProps";
-import { SCENE_COLORS } from "./scene";
+import { installEdgeFade, SCENE_COLORS } from "./scene";
+
+installEdgeFade();
 
 function NoWebgl() {
   return (
@@ -80,11 +84,13 @@ export default function CampusCanvas() {
         <Suspense fallback={null}>
           <CampusModel focus={focus} time={time} />
         </Suspense>
+        <CampusArea />
         <Trees />
         <BikeRacks />
         <TramLine />
         <WalkingRoute focus={focus} />
         <AreaHighlight focus={focus} />
+        <NavigationLayer />
         <LabelProjector />
         <CameraRig focus={focus} />
       </Canvas>

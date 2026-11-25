@@ -36,7 +36,7 @@ export function Panel({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isDesktop = useIsDesktop();
   const sheetRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
   const suppressClick = useRef(false);
   const [height, setHeight] = useState(0);
   const [chosen, setChosen] = useState<{ path: string; snap: Snap } | null>(
@@ -167,13 +167,15 @@ export function Panel({ children }: { children: ReactNode }) {
           />
         </button>
       </div>
-      <div
+      <main
+        id="content"
+        tabIndex={-1}
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain lg:rounded-[24px]"
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain focus:outline-none lg:rounded-[24px]"
         style={{ paddingBottom: isDesktop ? undefined : translate }}
       >
         {children}
-      </div>
+      </main>
     </div>
   );
 }

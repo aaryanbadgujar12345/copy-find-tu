@@ -188,17 +188,27 @@ function SearchResults({
   query: string;
   results: ReturnType<typeof searchCampus>;
 }) {
-  if (results.places.length === 0 && results.rooms.length === 0) {
+  const count = results.places.length + results.rooms.length;
+  const status = (
+    <p role="status" className="sr-only">
+      {copy.explore.resultCount(count)}
+    </p>
+  );
+  if (count === 0) {
     return (
-      <EmptyState
-        icon={<Search size={22} />}
-        title={copy.explore.noResults(query.trim())}
-        body={copy.explore.noResultsHint}
-      />
+      <>
+        {status}
+        <EmptyState
+          icon={<Search size={22} />}
+          title={copy.explore.noResults(query.trim())}
+          body={copy.explore.noResultsHint}
+        />
+      </>
     );
   }
   return (
     <>
+      {status}
       {results.places.length > 0 ? (
         <Section title={copy.explore.places}>
           <ul role="list">

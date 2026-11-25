@@ -11,7 +11,7 @@ export const OUT_GEO = path.join(ROOT, "data/campus-geo.json");
 export const OUT_SOURCE = path.join(ROOT, "public/campus/SOURCE.md");
 
 /** WGS84 box the scene covers: [south, west, north, east]. */
-export const BBOX = [51.993, 4.363, 52.0105, 4.387];
+export const BBOX = [51.9865, 4.363, 52.0105, 4.387];
 
 /** Scene origin, between the Aula and the Library. */
 export const ORIGIN = { lat: 52.0025, lon: 4.3744 };
@@ -43,6 +43,7 @@ export const PLACES = {
   pulse: { building: { bag: ["0503100000036577"] } },
   echo: { building: { bag: ["0503100000036818"] } },
   eemcs: { building: { point: [51.99884, 4.37365] } },
+  flux: { building: { bag: ["0503100000037977"], fallback: "flux" } },
   "bk-city": { building: { bag: ["0503100000032914"] } },
   x: { building: { bag: ["0503100000025419", "0503100000019276"] } },
   "science-centre": { building: { point: [51.99761, 4.37856] } },

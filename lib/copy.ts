@@ -13,6 +13,7 @@ export const copy = {
     events: "Events",
     more: "More",
   },
+  skipToContent: "Skip to content",
   sheet: {
     expand: "Show more",
     collapse: "Show less",
@@ -33,7 +34,10 @@ export const copy = {
     busy: "Busy",
     full: "Full",
     closed: "Closed",
-    unknown: "No sensor",
+    unknown: "No data",
+    estimate: "estimate",
+    estimateNote:
+      "Estimated from the time of day and the day of the week. There are no live seat sensors yet.",
     taken: (taken: number, seats: number) => `${taken} of ${seats} seats taken`,
     percent: (ratio: number) => `${Math.round(ratio * 100)}%`,
   },
@@ -55,6 +59,8 @@ export const copy = {
     searchLabel: "Search campus",
     searchPlaceholder: "Search places, faculties, rooms",
     clearSearch: "Clear search",
+    resultCount: (n: number) =>
+      n === 0 ? "No results" : `${n} ${n === 1 ? "result" : "results"}`,
     categories: "Categories",
     allPlaces: "All places",
     tasksTitle: "What do you need?",
@@ -85,7 +91,7 @@ export const copy = {
   },
   study: {
     title: "Study spots",
-    intro: "How busy it is right now.",
+    intro: "Estimated busyness right now.",
     recommend: "Recommend me a spot",
     recommendHint: "Three questions, four rooms",
     closedLast: "Closed now",
@@ -244,8 +250,18 @@ export const copy = {
     moreInfo: "More info",
     empty: "Nothing on right now",
     emptyHint: "Check back next week.",
+    emptyFilter: "Nothing on then",
+    emptyFilterHint: "Try another day, or see all events.",
     thisWeek: "This week",
     later: "Later",
+    filters: "When",
+    all: "All",
+    today: "Today",
+    week: "Next 7 days",
+    laterFilter: "Later",
+    happeningNow: "Happening now",
+    here: "Events here",
+    demo: "Example events. The real campus calendar isn't connected yet.",
   },
   notices: {
     dismiss: "Dismiss",
@@ -297,6 +313,29 @@ export const copy = {
     thanksTitle: "Thank you",
     thanksBody: "Your feedback goes straight to the campus team.",
   },
+  directions: {
+    title: "Directions",
+    start: "Directions from my location",
+    locating: "Finding your location…",
+    denied:
+      "Location is turned off for this site. Allow it in your browser settings, or open the route in Google Maps.",
+    unavailable:
+      "Your location isn't available right now. You can still open the route in Google Maps.",
+    away: (metres: number) =>
+      metres >= 1000
+        ? `${(metres / 1000).toFixed(1)} km away`
+        : `${Math.round(metres / 10) * 10} m away`,
+    walk: (minutes: number) => `about ${minutes} min walk`,
+    arrived: "You've arrived",
+    accuracy: (metres: number) =>
+      `Location accurate to about ${Math.round(metres)} m`,
+    lineNote:
+      "The line on the map points the way. For street-by-street directions, open the route in Google Maps.",
+    farAway: "You're outside the 3D map, so it doesn't show your position.",
+    openRoute: "Open route in Google Maps",
+    stop: "Stop directions",
+    you: "Your location",
+  },
   campus: {
     label: "3D map of the TU Delft campus",
     view3d: "3D view",
@@ -304,6 +343,11 @@ export const copy = {
     recenter: "Show whole campus",
     noWebgl: "The 3D map can't run on this device. Everything else works.",
     route: "Walking route from the tram",
+    legend: "Map key",
+    controls: "Map controls",
+    legendCampus: "TU Delft campus",
+    legendCity: "Not TU Delft",
+    legendBusy: "Busy estimate",
   },
   notFound: {
     title: "Page not found",

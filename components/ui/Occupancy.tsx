@@ -31,6 +31,7 @@ export function OccupancyTag({ occupancy }: { occupancy: Occupancy | null }) {
       {occupancy.state === "open" ? (
         <span className="font-normal text-ink-2">
           {copy.occupancy.percent(occupancy.ratio)}
+          <span className="sr-only"> ({copy.occupancy.estimate})</span>
         </span>
       ) : null}
     </span>
@@ -47,12 +48,13 @@ export function OccupancyBar({ occupancy }: { occupancy: Occupancy | null }) {
       <div className="flex items-baseline justify-between">
         <OccupancyTag occupancy={occupancy} />
         <span className="text-[13px] text-ink-2">
-          {copy.occupancy.taken(occupancy.taken, occupancy.seats)}
+          {copy.occupancy.taken(occupancy.taken, occupancy.seats)} ·{" "}
+          {copy.occupancy.estimate}
         </span>
       </div>
       <div
         role="meter"
-        aria-label={levelWord(occupancy)}
+        aria-label={`${levelWord(occupancy)}, ${copy.occupancy.estimate}`}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(occupancy.ratio * 100)}

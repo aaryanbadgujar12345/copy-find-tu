@@ -6,6 +6,12 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { campusGeo } from "@/lib/geo";
 import type { MapFocus } from "@/lib/map-focus";
+import {
+  getNav as getNavSnapshot,
+  inScene,
+  sceneOf,
+  useNav,
+} from "@/lib/navigation";
 import { getUi, useUi } from "@/lib/ui-store";
 import { prefersReducedMotion } from "./scene";
 
@@ -34,6 +40,8 @@ export function CameraRig({ focus }: { focus: MapFocus }) {
   const camera = useThree((state) => state.camera) as THREE.PerspectiveCamera;
   const size = useThree((state) => state.size);
   const lastOffset = useRef("");
+  const navTarget = useNav((nav) => nav.target);
+  const hasFix = useNav((nav) => nav.position !== null);
   const animate = !prefersReducedMotion();
 
   useEffect(() => {
@@ -105,6 +113,28 @@ export function CameraRig({ focus }: { focus: MapFocus }) {
     // Only a new selection moves the camera, not a resize.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus.selected, animate]);
+
+  useEffect(() => {
+    const c = controls.current;
+    const { target, position } = getNavSnapshot();
+    if (!c || !target || !position) return;
+    const goal = campusGeo.places[target];
+    const you = sceneOf(position);
+    if (goal.offscene || !inScene(you)) return;
+    const span = Math.hypot(you[0] - goal.anchor[0], you[1] - goal.anchor[1]);
+    void c.moveTo(
+      (you[0] + goal.anchor[0]) / 2,
+      0,
+      (you[1] + goal.anchor[1]) / 2,
+      animate,
+    );
+    void c.dollyTo(
+      fit(Math.max(PLACE_DISTANCE, span * 2.4), size.width, size.height),
+      animate,
+    );
+    // Frame the walk once when directions start, not on every position update.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navTarget, hasFix, animate]);
 
   useEffect(() => {
     const c = controls.current;
