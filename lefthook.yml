@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "*.{js,jsx,mjs,cjs,ts,tsx}"
+      # --no-warn-ignored: a staged file in globalIgnores would otherwise fail --max-warnings 0
+      run: pnpm exec eslint --max-warnings 0 --no-warn-ignored {staged_files}
+    typecheck:
+      glob: "*.{ts,tsx}"
+      run: pnpm exec next typegen && pnpm exec tsc --noEmit
+    format:
+      run: pnpm exec prettier --check --ignore-unknown {staged_files}
