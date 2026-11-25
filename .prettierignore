@@ -1,2 +1,3 @@
 pnpm-lock.yaml
 public/vendor
+/public/campus/paths.json

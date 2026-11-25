@@ -17,7 +17,8 @@ export const BBOX = [51.9865, 4.363, 52.0105, 4.387];
 /** Scene origin, between the Aula and the Library. */
 export const ORIGIN = { lat: 52.0025, lon: 4.3744 };
 
-export const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+export const OVERPASS_URL =
+  process.env.OVERPASS_URL ?? "https://overpass-api.de/api/interpreter";
 export const BAG_API = "https://api.3dbag.nl/collections/pand/items";
 export const USER_AGENT = "campus-prototype/0.1 (one-off build, cached)";
 

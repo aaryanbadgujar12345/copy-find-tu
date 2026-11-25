@@ -26,7 +26,8 @@ async function overpass(query) {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({ data: query }),
-    });
+      signal: AbortSignal.timeout(240_000),
+    }).catch((error) => ({ ok: false, status: error.name }));
     if (res.ok) return res.json();
     console.log(`  overpass ${res.status}, retrying in ${wait / 1000}s`);
     await sleep(wait);
@@ -54,9 +55,10 @@ const MAIN_QUERY = `[out:json][timeout:180];
 );
 out geom;`;
 
-const SERVICES_QUERY = `[out:json][timeout:60];
-(nwr["name"~"Student|Service|Servicedesk|Front Office|Welcome",i](${B}););
-out center tags;`;
+/** The services desk point (see PLACES in config.mjs). */
+const SERVICES_QUERY = `[out:json][timeout:30];
+node(2596109166);
+out;`;
 
 export async function loadOsm() {
   const main = await cached("osm.json", () => overpass(MAIN_QUERY));
@@ -94,10 +96,12 @@ export async function loadBag() {
           if (!res.ok) throw new Error(`3DBAG ${res.status} for ${url}`);
           const d = await res.json();
           matched = d.numberMatched;
-          for (const f of d.features)
-            objects += Object.keys(f.CityObjects).length;
-          out.push({ transform: d.metadata.transform, features: d.features });
-          url = d.links.find((l) => l.rel === "next")?.href;
+          const found = d.features ?? [];
+          for (const f of found) objects += Object.keys(f.CityObjects).length;
+          if (found.length && d.metadata) {
+            out.push({ transform: d.metadata.transform, features: found });
+          }
+          url = d.links?.find((l) => l.rel === "next")?.href;
           await sleep(150);
         }
         if (objects !== matched) {

@@ -82,7 +82,7 @@ export function walkTo(
   const end = net.places[target];
   if (end === undefined) return null;
   const begin = nearest(net, from);
-  const dist = new Float32Array(net.x.length).fill(Infinity);
+  const dist = new Float64Array(net.x.length).fill(Infinity);
   const prev = new Int32Array(net.x.length).fill(-1);
   const heap: [number, number][] = [[0, begin]];
   dist[begin] = 0;
