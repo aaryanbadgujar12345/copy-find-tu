@@ -4,14 +4,16 @@ import { usePathname } from "next/navigation";
 import type { PointerEvent, ReactNode } from "react";
 import { useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { copy } from "@/lib/copy";
-import { setUi } from "@/lib/ui-store";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { setUi, useUi } from "@/lib/ui-store";
 
 type Snap = "peek" | "half" | "full";
 
 const DESKTOP = "(min-width: 1024px)";
 const TAB_BAR = 64;
 const PEEK = 112;
-const DESKTOP_INSET = 92 + 400;
+const RAIL = 92;
+const DESKTOP_INSET = RAIL + 400;
 const FULL_SCREEN_ROUTES = new Set(["more", "faq", "contact", "feedback"]);
 
 function subscribeMedia(listener: () => void) {
@@ -43,6 +45,8 @@ export function Panel({ children }: { children: ReactNode }) {
     null,
   );
   const [dragTranslate, setDragTranslate] = useState<number | null>(null);
+  const panelHidden = useUi((state) => state.panelHidden);
+  const hidden = isDesktop && panelHidden;
 
   const snap = chosen?.path === pathname ? chosen.snap : defaultSnap(pathname);
   const visible: Record<Snap, number> = {
@@ -67,11 +71,11 @@ export function Panel({ children }: { children: ReactNode }) {
 
   useLayoutEffect(() => {
     if (isDesktop) {
-      setUi({ insets: { left: DESKTOP_INSET, bottom: 0 } });
+      setUi({ insets: { left: hidden ? RAIL : DESKTOP_INSET, bottom: 0 } });
     } else if (height > 0) {
       setUi({ insets: { left: 0, bottom: height - translate + TAB_BAR } });
     }
-  }, [isDesktop, height, translate]);
+  }, [isDesktop, height, translate, hidden]);
 
   function choose(next: Snap) {
     setChosen({ path: pathname, snap: next });
@@ -129,53 +133,75 @@ export function Panel({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div
-      ref={sheetRef}
-      onPointerDown={onPointerDown}
-      onClickCapture={(event) => {
-        if (suppressClick.current) {
-          suppressClick.current = false;
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      }}
-      style={{
-        transform:
-          height > 0
-            ? `translateY(${translate}px)`
-            : "translateY(calc(100% - 48dvh))",
-      }}
-      className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 flex h-[calc(100dvh-4rem-env(safe-area-inset-bottom)-48px)] flex-col rounded-t-(--radius-sheet) bg-paper shadow-sheet lg:top-3 lg:bottom-3 lg:left-[92px] lg:h-auto lg:w-[400px] lg:transform-none! lg:rounded-[24px] lg:shadow-float ${
-        dragTranslate === null
-          ? "transition-transform duration-500 ease-out-soft"
-          : ""
-      }`}
-    >
+    <>
+      <button
+        type="button"
+        onClick={() => setUi({ panelHidden: !panelHidden })}
+        aria-expanded={!hidden}
+        aria-controls="content"
+        aria-label={hidden ? copy.sheet.showPanel : copy.sheet.hidePanel}
+        title={hidden ? copy.sheet.showPanel : copy.sheet.hidePanel}
+        className={`fixed top-5 z-40 hidden size-10 items-center justify-center rounded-full bg-paper text-ink shadow-float transition-[left,background-color] duration-300 ease-out-soft hover:bg-mist lg:flex ${
+          hidden ? "left-[92px]" : "left-[500px]"
+        }`}
+      >
+        {hidden ? (
+          <ChevronRight aria-hidden size={20} />
+        ) : (
+          <ChevronLeft aria-hidden size={20} />
+        )}
+      </button>
       <div
-        data-drag
-        className="flex h-6 shrink-0 touch-none justify-center pt-2 lg:hidden"
+        ref={sheetRef}
+        inert={hidden || undefined}
+        onPointerDown={onPointerDown}
+        onClickCapture={(event) => {
+          if (suppressClick.current) {
+            suppressClick.current = false;
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }}
+        style={{
+          transform:
+            height > 0
+              ? `translateY(${translate}px)`
+              : "translateY(calc(100% - 48dvh))",
+        }}
+        className={`fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 flex h-[calc(100dvh-4rem-env(safe-area-inset-bottom)-48px)] flex-col rounded-t-(--radius-sheet) bg-paper shadow-sheet lg:top-3 lg:bottom-3 lg:h-auto lg:transition-[left] lg:duration-300 ${hidden ? "lg:left-[-420px]" : "lg:left-[92px]"} lg:w-[400px] lg:transform-none! lg:rounded-[24px] lg:shadow-float ${
+          dragTranslate === null
+            ? "transition-transform duration-500 ease-out-soft"
+            : ""
+        }`}
       >
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label={snap === "full" ? copy.sheet.collapse : copy.sheet.expand}
-          className="h-4 w-16 rounded-full"
+        <div
+          data-drag
+          className="flex h-6 shrink-0 touch-none justify-center pt-2 lg:hidden"
         >
-          <span
-            aria-hidden
-            className="mx-auto block h-1.5 w-10 rounded-full bg-line"
-          />
-        </button>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={
+              snap === "full" ? copy.sheet.collapse : copy.sheet.expand
+            }
+            className="h-4 w-16 rounded-full"
+          >
+            <span
+              aria-hidden
+              className="mx-auto block h-1.5 w-10 rounded-full bg-line"
+            />
+          </button>
+        </div>
+        <main
+          id="content"
+          tabIndex={-1}
+          ref={scrollRef}
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain focus:outline-none lg:rounded-[24px]"
+          style={{ paddingBottom: isDesktop ? undefined : translate }}
+        >
+          {children}
+        </main>
       </div>
-      <main
-        id="content"
-        tabIndex={-1}
-        ref={scrollRef}
-        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain focus:outline-none lg:rounded-[24px]"
-        style={{ paddingBottom: isDesktop ? undefined : translate }}
-      >
-        {children}
-      </main>
-    </div>
+    </>
   );
 }

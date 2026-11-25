@@ -6,12 +6,15 @@ export interface UiState {
   recenter: number;
   /** Screen space the panel covers: desktop on the left, phone at the bottom. */
   insets: { left: number; bottom: number };
+  /** Desktop only: the side panel is tucked away to show more map. */
+  panelHidden: boolean;
 }
 
 let state: UiState = {
   view: "3d",
   recenter: 0,
   insets: { left: 0, bottom: 0 },
+  panelHidden: false,
 };
 const listeners = new Set<() => void>();
 

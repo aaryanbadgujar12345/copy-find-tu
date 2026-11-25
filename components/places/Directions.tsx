@@ -19,7 +19,8 @@ export function Directions({ placeId }: { placeId: PlaceId }) {
   const nav = useNav((state) => state);
   const mine = nav.target === placeId;
   const position = mine ? nav.position : null;
-  const leg = position ? legTo(position, placeId) : null;
+  const route = mine ? nav.route : null;
+  const leg = position ? legTo(position, placeId, route) : null;
   const far = position ? !inScene(sceneOf(position)) : false;
 
   return (
@@ -57,7 +58,13 @@ export function Directions({ placeId }: { placeId: PlaceId }) {
                 : `${copy.directions.away(leg.metres)}, ${copy.directions.walk(leg.minutes)}`}
             </p>
             <p className="mt-1 text-[13px] leading-5 text-ink-2">
-              {far ? copy.directions.farAway : copy.directions.lineNote}
+              {far
+                ? copy.directions.farAway
+                : route
+                  ? copy.directions.routeNote
+                  : nav.routing === "finding"
+                    ? copy.directions.finding
+                    : copy.directions.lineNote}
             </p>
             {position.accuracy >= 1 ? (
               <p className="mt-1 text-[12px] text-ink-2">

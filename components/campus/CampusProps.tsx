@@ -6,7 +6,12 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { campusGeo } from "@/lib/geo";
 import type { MapFocus } from "@/lib/map-focus";
-import { prefersReducedMotion, SCENE_COLORS, toVector } from "./scene";
+import {
+  fadeWithScene,
+  prefersReducedMotion,
+  SCENE_COLORS,
+  toVector,
+} from "./scene";
 
 export function Trees() {
   const ref = useRef<THREE.InstancedMesh>(null);
@@ -52,6 +57,7 @@ export function TramLine() {
       {campusGeo.tramLine.map((segment, index) => (
         <Line
           key={index}
+          ref={fadeWithScene as never}
           points={segment.map((point) => toVector(point, 0.4))}
           color={SCENE_COLORS.tram}
           lineWidth={2}
@@ -182,6 +188,7 @@ export function CampusArea() {
         />
       </mesh>
       <Line
+        ref={fadeWithScene as never}
         points={outline}
         color={SCENE_COLORS.campusOutline}
         lineWidth={2.5}

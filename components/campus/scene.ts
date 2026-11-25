@@ -88,9 +88,19 @@ export function installEdgeFade() {
   chunks.fog_fragment = `#ifdef USE_FOG
   vec2 fogEdge = (vFogWorld - vec2(${cx}, ${cz})) / vec2(${hx}, ${hz});
   float fogFactor = max(
-    smoothstep(0.62, 0.97, length(fogEdge)),
+    smoothstep(0.86, 1.0, length(fogEdge)),
     smoothstep(fogNear, fogFar, vFogDepth)
   );
   gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);
 #endif`;
+}
+
+/** drei's lines skip fog by default; this lets them fade at the edge like everything else. */
+export function fadeWithScene(
+  line: { material?: THREE.Material & { fog?: boolean } } | null,
+) {
+  if (line?.material && !line.material.fog) {
+    line.material.fog = true;
+    line.material.needsUpdate = true;
+  }
 }

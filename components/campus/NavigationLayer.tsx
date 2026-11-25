@@ -12,6 +12,7 @@ import { prefersReducedMotion, SCENE_COLORS, toVector } from "./scene";
 export function NavigationLayer() {
   const target = useNav((nav) => nav.target);
   const position = useNav((nav) => nav.position);
+  const route = useNav((nav) => nav.route);
   const ring = useRef<THREE.Mesh>(null);
   const still = useMemo(() => prefersReducedMotion(), []);
 
@@ -31,14 +32,33 @@ export function NavigationLayer() {
 
   return (
     <group>
-      {goal && !goal.offscene ? (
+      {route ? (
+        <>
+          <Line
+            points={route.points.map((point) => toVector(point, 2))}
+            color={SCENE_COLORS.you}
+            lineWidth={6}
+            transparent
+            opacity={0.3}
+            depthTest={false}
+            renderOrder={10}
+          />
+          <Line
+            points={route.points.map((point) => toVector(point, 2))}
+            color={SCENE_COLORS.you}
+            lineWidth={6}
+          />
+        </>
+      ) : goal && !goal.offscene ? (
         <Line
           points={[toVector(you, 1.6), toVector(goal.anchor, 1.6)]}
           color={SCENE_COLORS.you}
-          lineWidth={4}
+          lineWidth={3}
           dashed
           dashSize={8}
           gapSize={5}
+          transparent
+          opacity={0.6}
         />
       ) : null}
       <mesh

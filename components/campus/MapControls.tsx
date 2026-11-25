@@ -48,11 +48,12 @@ function Swatch({ className }: { className: string }) {
 
 /** What the colours on the map mean. */
 function MapKey() {
+  const hidden = useUi((state) => state.panelHidden);
   return (
     <div
       role="group"
       aria-label={copy.campus.legend}
-      className="pointer-events-none fixed top-[max(32px,calc(env(safe-area-inset-top)+20px))] right-16 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-paper/90 px-3 py-2 text-[11px] font-medium text-ink shadow-float backdrop-blur lg:top-auto lg:right-auto lg:bottom-3 lg:left-[516px]"
+      className={`pointer-events-none fixed top-[max(32px,calc(env(safe-area-inset-top)+20px))] right-16 left-3 z-20 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-paper/90 px-3 py-2 text-[11px] font-medium text-ink shadow-float backdrop-blur lg:top-auto lg:right-auto lg:bottom-3 ${hidden ? "lg:left-[104px]" : "lg:left-[516px]"}`}
     >
       <span className="flex items-center gap-1.5">
         <Swatch className="size-3 rounded-[3px] border border-dashed border-brand-deep bg-[#cfe6ef]" />

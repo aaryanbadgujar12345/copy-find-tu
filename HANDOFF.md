@@ -9,7 +9,7 @@ Status: ⬜ open · 🟡 in progress · ✅ done
 - ⬜ **Still image for devices without WebGL** · ~30 min. The spec asks for a still of the campus; today they get a short message instead. Owner: agent.
 - ⬜ **`ui-review` pass** on the main screens · ~1h. Owner: agent.
 - ⬜ **Rebuild the campus model** with `pnpm build:campus` on a machine with internet. The box now reaches south to 51.9865, so Aerospace Engineering, The Fellowship and the rest of south campus get 3D buildings; today the scene stops just south of X and only the campus outline continues. Until then, `node scripts/campus/patch-glb.mjs` was used to split campus and city buildings and add Flux offline. Owner: agent.
-- ⬜ **Walking routes from your location** · ~1h. Directions draw a straight line from you to the building and hand off to Google Maps for street-by-street directions. Shipping the campus path network (already built for the tram routes) as a small graph would let the map draw the real route. Owner: agent.
+- 🟡 **Walking routes from your location.** `pnpm build:campus` now also writes `public/campus/paths.json`, the campus footpath network, and directions follow it. Until the model is rebuilt, directions fall back to a dashed straight line. Owner: you (run the rebuild).
 
 ## Open questions
 

@@ -17,6 +17,8 @@ export const copy = {
   sheet: {
     expand: "Show more",
     collapse: "Show less",
+    hidePanel: "Hide panel",
+    showPanel: "Show panel",
   },
   common: {
     back: "Back",
@@ -329,8 +331,11 @@ export const copy = {
     arrived: "You've arrived",
     accuracy: (metres: number) =>
       `Location accurate to about ${Math.round(metres)} m`,
+    finding: "Finding the path…",
     lineNote:
-      "The line on the map points the way. For street-by-street directions, open the route in Google Maps.",
+      "The dashed line points the way. For street-by-street directions, open the route in Google Maps.",
+    routeNote:
+      "Follow the blue line on the map. It sticks to paths and pavements.",
     farAway: "You're outside the 3D map, so it doesn't show your position.",
     openRoute: "Open route in Google Maps",
     stop: "Stop directions",

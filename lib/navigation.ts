@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import type { PlaceId, ScenePoint } from "@/data/types";
 import { campusGeo, distance, geoOf } from "./geo";
+import { loadNetwork, walkTo, type WalkRoute } from "./walking";
 
 export type NavStatus =
   "idle" | "locating" | "active" | "denied" | "unavailable";
@@ -9,9 +10,20 @@ export interface NavState {
   target: PlaceId | null;
   status: NavStatus;
   position: { lat: number; lon: number; accuracy: number } | null;
+  /** The walk along paths, or `null` while it's worked out or when there's no path network. */
+  route: WalkRoute | null;
+  /** `none`: no path network or no path found, so the map shows a straight line. */
+  routing: "finding" | "found" | "none";
 }
 
-let state: NavState = { target: null, status: "idle", position: null };
+let state: NavState = {
+  target: null,
+  status: "idle",
+  position: null,
+  route: null,
+  routing: "finding",
+};
+let routedFrom: ScenePoint | null = null;
 let watchId: number | null = null;
 const listeners = new Set<() => void>();
 
@@ -44,9 +56,16 @@ export function startNavigation(target: PlaceId) {
     set({ target, status: "unavailable", position: null });
     return;
   }
-  set({ target, status: state.position ? "active" : "locating" });
+  routedFrom = null;
+  set({
+    target,
+    status: state.position ? "active" : "locating",
+    route: null,
+    routing: "finding",
+  });
+  if (state.position) void reroute();
   watchId = navigator.geolocation.watchPosition(
-    (p) =>
+    (p) => {
       set({
         status: "active",
         position: {
@@ -54,7 +73,9 @@ export function startNavigation(target: PlaceId) {
           lon: p.coords.longitude,
           accuracy: p.coords.accuracy,
         },
-      }),
+      });
+      void reroute();
+    },
     (error) => {
       stopWatching();
       set({
@@ -68,7 +89,30 @@ export function startNavigation(target: PlaceId) {
 
 export function stopNavigation() {
   stopWatching();
-  set({ target: null, status: "idle" });
+  routedFrom = null;
+  set({ target: null, status: "idle", route: null, routing: "finding" });
+}
+
+/** Work the walk out again once the student has moved a little. */
+async function reroute() {
+  const { target, position } = state;
+  if (!target || !position) return;
+  const from = sceneOf(position);
+  if (
+    routedFrom &&
+    Math.hypot(from[0] - routedFrom[0], from[1] - routedFrom[1]) < 12
+  )
+    return;
+  routedFrom = from;
+  const goal = geoOf(target);
+  if (goal.offscene || !inScene(from)) {
+    set({ route: null, routing: "none" });
+    return;
+  }
+  const net = await loadNetwork();
+  if (state.target !== target) return;
+  const route = net ? walkTo(net, from, target, goal.anchor) : null;
+  set({ route, routing: route ? "found" : "none" });
 }
 
 function stopWatching() {
@@ -90,12 +134,14 @@ export interface Leg {
 export function legTo(
   from: { lat: number; lon: number },
   target: PlaceId,
+  route: WalkRoute | null = null,
 ): Leg {
-  const metres = distance(from, geoOf(target));
+  const straight = distance(from, geoOf(target));
+  const metres = route ? route.metres : straight * DETOUR;
   return {
     metres,
-    minutes: Math.max(1, Math.round((metres * DETOUR) / WALK_PER_MINUTE)),
-    arrived: metres < 30,
+    minutes: Math.max(1, Math.round(metres / WALK_PER_MINUTE)),
+    arrived: straight < 30,
   };
 }
 

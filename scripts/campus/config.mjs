@@ -9,6 +9,7 @@ export const CACHE = path.join(ROOT, "scripts/.cache");
 export const OUT_GLB = path.join(ROOT, "public/campus/campus.glb");
 export const OUT_GEO = path.join(ROOT, "data/campus-geo.json");
 export const OUT_SOURCE = path.join(ROOT, "public/campus/SOURCE.md");
+export const OUT_PATHS = path.join(ROOT, "public/campus/paths.json");
 
 /** WGS84 box the scene covers: [south, west, north, east]. */
 export const BBOX = [51.9865, 4.363, 52.0105, 4.387];

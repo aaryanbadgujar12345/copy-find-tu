@@ -12,6 +12,7 @@ import {
   ORIGIN,
   OUT_GEO,
   OUT_GLB,
+  OUT_PATHS,
   OUT_SOURCE,
   PLACE_IDS,
   PLACES,
@@ -225,6 +226,7 @@ async function main() {
 
   /* ---------- places ---------- */
   const graph = buildGraph(osm);
+  const entranceOf = {};
   const tram = byId.get(`relation/${TRAM_19_RELATION}`);
   const stopsByName = new Map();
   for (const rel of osm.filter(
@@ -288,6 +290,7 @@ async function main() {
       const { anchor, height } = placeTop[id];
       place = { ...empty, anchor, height, meshes: [`place-${id}`] };
       const target = nearestNodeToRing(graph, biggest.main);
+      entranceOf[id] = target;
       routes[id] = routeTo(target);
     } else if (rule.areaWay) {
       const el = byId.get(`way/${rule.areaWay}`);
@@ -297,6 +300,7 @@ async function main() {
       const target =
         nearestNode(graph, anchor, (_, q) => pointInRing(q, ring)) ??
         nearestNodeToRing(graph, ring);
+      entranceOf[id] = target;
       routes[id] = routeTo(target);
     } else if (rule.stationNode) {
       const el = byId.get(`node/${rule.stationNode}`);
@@ -441,7 +445,12 @@ async function main() {
       p.anchor,
       ...p.markers.map((m) => m.point),
       ...(p.area ?? []),
-    ]);
+    ])
+    .concat(
+      CAMPUS_OUTLINE.map(([lat, lon]) => sceneFromLatLon(lat, lon)).filter(
+        inBox,
+      ),
+    );
   const margin = 220;
   const bounds = {
     min: pt([
@@ -513,6 +522,7 @@ async function main() {
     bikeParking: bikeAll.map(pt),
     attribution: ["3DBAG (CC BY 4.0)", "© OpenStreetMap contributors"],
   };
+  await writePaths(graph, entranceOf);
   await fs.writeFile(
     OUT_GEO,
     await prettier.format(JSON.stringify(geo), { parser: "json" }),
@@ -536,6 +546,35 @@ async function main() {
   console.log(triangles);
   console.log(
     `bounds ${JSON.stringify(bounds)}, ${trees.length} trees, ${geo.bikeParking.length} bike parking`,
+  );
+}
+
+/**
+ * The walking network for directions in the app: node positions, links between
+ * them and the node at each place's door. Loaded only when someone asks for
+ * directions, so it stays out of the page bundle.
+ */
+async function writePaths(graph, entranceOf) {
+  const index = new Map();
+  const nodes = [];
+  for (const [id, p] of graph.pos) {
+    index.set(id, index.size);
+    nodes.push(round1(p[0]), round1(p[1]));
+  }
+  const edges = [];
+  for (const [a, list] of graph.adj) {
+    for (const [b] of list) {
+      if (index.get(a) < index.get(b)) edges.push(index.get(a), index.get(b));
+    }
+  }
+  const places = Object.fromEntries(
+    Object.entries(entranceOf)
+      .filter(([, node]) => index.has(node))
+      .map(([id, node]) => [id, index.get(node)]),
+  );
+  await fs.writeFile(OUT_PATHS, JSON.stringify({ nodes, edges, places }));
+  console.log(
+    `paths.json: ${nodes.length / 2} nodes, ${edges.length / 2} links, ${((await fs.stat(OUT_PATHS)).size / 1024).toFixed(0)} KB`,
   );
 }
 
